@@ -1012,6 +1012,82 @@
             animation: slideUp 0.3s ease;
         }
 
+        .modal-large {
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .category-detail-summary {
+            background: var(--bg-input);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .category-detail-summary .total-amount {
+            font-size: 28px;
+            font-weight: 700;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--accent-red);
+        }
+
+        .category-detail-summary .total-count {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .category-detail-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .category-detail-item {
+            background: var(--bg-input);
+            border-radius: var(--radius-sm);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .category-detail-item .item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .category-detail-item .item-note {
+            font-size: 15px;
+            color: var(--text-primary);
+        }
+
+        .category-detail-item .item-date {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .category-detail-item .item-amount {
+            font-size: 16px;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--accent-red);
+        }
+
+        .legend-item {
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+
+        .legend-item:active {
+            transform: scale(0.97);
+        }
+
         @keyframes slideUp {
             from { transform: translateY(100%); }
             to { transform: translateY(0); }
@@ -2101,6 +2177,18 @@
         </div>
     </div>
 
+    <!-- Category Detail Modal -->
+    <div class="modal-overlay" id="categoryDetailModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <div class="modal-title" id="categoryDetailTitle">分類明細</div>
+                <button class="modal-close" onclick="closeCategoryDetail()">×</button>
+            </div>
+            <div class="category-detail-summary" id="categoryDetailSummary"></div>
+            <div class="category-detail-list" id="categoryDetailList"></div>
+        </div>
+    </div>
+
     <!-- Confirm Dialog -->
     <div class="confirm-overlay" id="confirmOverlay">
         <div class="confirm-box">
@@ -2733,13 +2821,69 @@
                 const catData = categories.expense[cat] || { name: '其他', color: '#8b99a6' };
                 const percent = ((amount / total) * 100).toFixed(1);
                 return `
-                    <div class="legend-item">
+                    <div class="legend-item" onclick="showCategoryDetail('${cat}')">
                         <div class="legend-color" style="background: ${catData.color}"></div>
                         <div class="legend-name">${catData.name}</div>
                         <div class="legend-value">$${amount.toLocaleString()} (${percent}%)</div>
                     </div>
                 `;
             }).join('');
+        }
+
+        // Category Detail Modal
+        function showCategoryDetail(categoryKey) {
+            const year = reportMonth.getFullYear();
+            const month = reportMonth.getMonth();
+            
+            // 篩選該月份該分類的支出
+            const entries = data.entries.filter(e => {
+                if (e.type !== 'expense' || e.category !== categoryKey) return false;
+                const d = new Date(e.date);
+                return d.getFullYear() === year && d.getMonth() === month;
+            });
+            
+            // 按日期排序（新到舊）
+            entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            const catData = categories.expense[categoryKey] || { name: '其他', icon: '📦' };
+            const total = entries.reduce((sum, e) => sum + e.amount, 0);
+            
+            // 設定標題
+            document.getElementById('categoryDetailTitle').textContent = `${catData.icon} ${catData.name}`;
+            
+            // 設定摘要
+            document.getElementById('categoryDetailSummary').innerHTML = `
+                <div class="total-amount">$${total.toLocaleString()}</div>
+                <div class="total-count">${entries.length} 筆支出</div>
+            `;
+            
+            // 設定列表
+            const listEl = document.getElementById('categoryDetailList');
+            if (entries.length === 0) {
+                listEl.innerHTML = '<div class="empty-state"><div class="empty-text">沒有記錄</div></div>';
+            } else {
+                listEl.innerHTML = entries.map(e => {
+                    const d = new Date(e.date);
+                    const dateStr = `${d.getMonth() + 1}/${d.getDate()}`;
+                    const pay = payments[e.payment] || { name: '現金' };
+                    return `
+                        <div class="category-detail-item">
+                            <div class="item-info">
+                                <div class="item-note">${e.note || '（無備註）'}</div>
+                                <div class="item-date">${dateStr} · ${pay.name}</div>
+                            </div>
+                            <div class="item-amount">$${e.amount.toLocaleString()}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            // 顯示 Modal
+            document.getElementById('categoryDetailModal').classList.add('active');
+        }
+
+        function closeCategoryDetail() {
+            document.getElementById('categoryDetailModal').classList.remove('active');
         }
 
         // Fixed Expenses
