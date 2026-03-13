@@ -310,7 +310,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);min-height:100vh
 </div>
 
 <script>
-const API='https://script.google.com/macros/s/AKfycbwooIkNf6GNN0W0KNiihWAOg5-pXt0kJC9LK53Jvo_BhQ3T9GxDLMK7Iof-d4dllg_pXg/exec';
+const API='https://script.google.com/macros/s/AKfycby5zCyeGAZJzPRe5k9fT8UEGQ88Dd5qv2zkFNbMUG1pQQJ13ncU8bIuOVaDSH28LZoSCQ/exec';
 const CAT={
   personal:{label:'個人',color:'#ff7eb3'},
   work:{label:'工作',color:'#7eb8ff'},
@@ -393,9 +393,29 @@ async function fetchEvents(){
     events={};
     rows.forEach(r=>{
       if(!r.date)return;
-      const d=String(r.date).trim();
+      // Handle Google Sheets date format (ISO string or YYYY-MM-DD)
+      let d = String(r.date).trim();
+      if(d.includes('T')){
+        // ISO format: convert to local YYYY-MM-DD
+        const dt = new Date(d);
+        dt.setMinutes(dt.getMinutes() + dt.getTimezoneOffset()); // fix UTC offset
+        d = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+      }
+      if(!d.match(/^\d{4}-\d{2}-\d{2}$/)) return;
+
+      // Handle time format
+      function parseTime(t){
+        if(!t) return '';
+        t = String(t).trim();
+        if(t.includes('T')){
+          const dt = new Date(t);
+          return `${String(dt.getUTCHours()).padStart(2,'0')}:${String(dt.getUTCMinutes()).padStart(2,'0')}`;
+        }
+        return t.slice(0,5);
+      }
+
       if(!events[d])events[d]=[];
-      events[d].push({title:r.title,cat:r.cat||'other',timeStart:r.timeStart||'',timeEnd:r.timeEnd||''});
+      events[d].push({title:String(r.title),cat:r.cat||'other',timeStart:parseTime(r.timeStart),timeEnd:parseTime(r.timeEnd)});
     });
     Object.keys(events).forEach(k=>{
       events[k].sort((a,b)=>(a.timeStart||'99:99').localeCompare(b.timeStart||'99:99'));
