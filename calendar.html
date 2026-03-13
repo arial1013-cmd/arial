@@ -128,20 +128,20 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);min-height:100vh
   font-weight:700;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;}
 
 /* Timeline grid */
-.wv-body{display:flex;overflow-y:auto;max-height:70vh;}
-.wv-times{width:52px;flex-shrink:0;border-right:1px solid var(--border);}
+.wv-body{display:grid;grid-template-columns:52px 1fr;overflow-y:auto;max-height:72vh;}
+.wv-times{border-right:1px solid var(--border);}
 .wv-time-label{height:54px;display:flex;align-items:flex-start;justify-content:flex-end;
   padding:4px 6px 0 0;font-size:.62rem;font-weight:700;color:var(--text-light);
   font-family:'Nunito',sans-serif;border-bottom:1px solid var(--border);}
-.wv-cols{flex:1;display:flex;}
-.wv-col{flex:1;border-right:1px solid var(--border);position:relative;}
+.wv-cols{display:grid;grid-template-columns:repeat(7,1fr);}
+.wv-col{border-right:1px solid var(--border);position:relative;min-width:0;}
 .wv-col:last-child{border-right:none;}
 .wv-cell{height:54px;border-bottom:1px solid var(--border);cursor:pointer;
   transition:background .12s;position:relative;}
-.wv-cell:hover{background:var(--primary-light);}
+.wv-cell:hover{background:rgba(255,126,179,.12);}
 .wv-cell:hover::after{content:'＋';position:absolute;right:4px;top:50%;
   transform:translateY(-50%);font-size:.75rem;color:var(--primary);font-weight:900;opacity:.6;}
-.wv-half{height:27px;border-bottom:1px dashed rgba(240,220,230,.6);}
+.wv-half{height:27px;border-bottom:1px dashed rgba(240,220,230,.5);}
 
 /* Events inside week cells */
 .wv-ev{position:absolute;left:2px;right:2px;border-radius:6px;
@@ -523,43 +523,42 @@ function renderMonth(){
 }
 
 // ── WEEK VIEW ──
-const HOUR_H=54; // px per hour
+const HOUR_H=54;
+const WV_START=6;
+const WV_END=23;
 
 function renderWeek(){
   const days=[]; for(let i=0;i<7;i++) days.push(addDays(weekStart,i));
-  const ds=days.map(d=>dkey(d));
-
-  // Nav title
   const s=days[0],e=days[6];
   $('navTitle').textContent=`${s.getMonth()+1}/${s.getDate()} – ${e.getMonth()+1}/${e.getDate()}，${s.getFullYear()}`;
+  const mc=MONTH_COLORS[weekStart.getMonth()];
 
-  // Headers
-  const headRow=$('wvHeaders'); headRow.innerHTML='';
+  // ── Header: grid layout for perfect alignment ──
+  const headRow=$('wvHeaders');
+  headRow.style.cssText='display:grid;grid-template-columns:52px repeat(7,1fr);border-bottom:2px solid var(--border);';
+  headRow.innerHTML='';
   const timeSp=document.createElement('div');
-  timeSp.style.cssText=`width:52px;flex-shrink:0;border-right:1px solid var(--border);
-    background:#fdf5f8;border-bottom:2px solid var(--border);`;
+  timeSp.style.cssText='border-right:1px solid var(--border);background:'+mc.cell+';';
   headRow.appendChild(timeSp);
-
   days.forEach((d,i)=>{
     const dk=dkey(d);
     const isToday=dk===todayKey();
     const hols=getHols(dk);
     const head=document.createElement('div');
     head.className='wv-day-head wv-col'+i+(isToday?' today-col':'');
-    head.innerHTML=`
-      <div class="wv-dn">${WD[d.getDay()]}</div>
-      <div class="wv-dd">${d.getDate()}</div>
-      ${hols.length?`<div class="wv-hol">${hols.slice(0,2).join('・')}</div>`:''}
-    `;
+    head.style.background=isToday?'linear-gradient(135deg,#fff0f6,#ffd6e8)':mc.cell;
+    head.innerHTML=`<div class="wv-dn">${WD[d.getDay()]}</div><div class="wv-dd">${d.getDate()}</div>${hols.length?'<div class="wv-hol">'+hols.slice(0,2).join('・')+'</div>':''}`;
     head.addEventListener('click',()=>openEvModal(dk,null,'',''));
     headRow.appendChild(head);
   });
 
-  // All-day row
-  const adRow=$('wvAlldayRow'); adRow.innerHTML='';
+  // ── All-day row: same grid ──
+  const adRow=$('wvAlldayRow');
+  adRow.style.cssText='display:grid;grid-template-columns:52px repeat(7,1fr);border-bottom:2px solid var(--border);min-height:28px;';
+  adRow.innerHTML='';
   const adSp=document.createElement('div'); adSp.className='wv-allday-spacer'; adSp.textContent='全天';
   adRow.appendChild(adSp);
-  days.forEach((d,i)=>{
+  days.forEach((d)=>{
     const dk=dkey(d);
     const col=document.createElement('div'); col.className='wv-allday-col';
     col.addEventListener('click',()=>openEvModal(dk,null,'',''));
@@ -567,15 +566,16 @@ function renderWeek(){
       const chip=document.createElement('div'); chip.className='wv-ad-chip';
       chip.style.background=CAT[ev.cat]?.color||'#aaa';
       chip.textContent=ev.title;
-      chip.addEventListener('click',e=>{e.stopPropagation();openEvModal(dk,idx);});
+      chip.addEventListener('click',e2=>{e2.stopPropagation();openEvModal(dk,idx);});
       col.appendChild(chip);
     });
     adRow.appendChild(col);
   });
 
-  // Time labels
+  // ── Body: time column + 7 day columns ──
+  // Time labels 06–23
   const timesEl=$('wvTimes'); timesEl.innerHTML='';
-  for(let h=0;h<=23;h++){
+  for(let h=WV_START;h<=WV_END;h++){
     const lbl=document.createElement('div'); lbl.className='wv-time-label';
     lbl.textContent=String(h).padStart(2,'0')+':00';
     timesEl.appendChild(lbl);
@@ -583,17 +583,18 @@ function renderWeek(){
 
   // Day columns
   const colsEl=$('wvCols'); colsEl.innerHTML='';
-  days.forEach((d,ci)=>{
+  days.forEach((d)=>{
     const dk=dkey(d);
     const col=document.createElement('div'); col.className='wv-col';
+    col.style.background=mc.cell;
 
-    // Hour cells
-    for(let h=0;h<=23;h++){
+    // Hour cells 06–23
+    for(let h=WV_START;h<=WV_END;h++){
       const cell=document.createElement('div'); cell.className='wv-cell';
       const half=document.createElement('div'); half.className='wv-half'; cell.appendChild(half);
       cell.addEventListener('click',()=>{
         const hStr=String(h).padStart(2,'0')+':00';
-        const hEnd=String(h+1>23?23:h+1).padStart(2,'0')+':00';
+        const hEnd=String(Math.min(h+1,23)).padStart(2,'0')+':00';
         openEvModal(dk,null,hStr,hEnd);
       });
       col.appendChild(cell);
@@ -602,27 +603,27 @@ function renderWeek(){
     // Place timed events
     (events[dk]||[]).filter(ev=>ev.timeStart).forEach((ev,idx)=>{
       const[sh,sm]=ev.timeStart.split(':').map(Number);
-      const topPx=sh*HOUR_H+Math.round(sm/60*HOUR_H);
-      let heightPx=HOUR_H; // default 1hr
+      if(sh<WV_START||sh>WV_END) return;
+      const topPx=(sh-WV_START)*HOUR_H+Math.round(sm/60*HOUR_H);
+      let heightPx=HOUR_H;
       if(ev.timeEnd){
         const[eh,em]=ev.timeEnd.split(':').map(Number);
-        const endMin=eh*60+em; const startMin=sh*60+sm;
+        const endMin=eh*60+em,startMin=sh*60+sm;
         if(endMin>startMin) heightPx=Math.round((endMin-startMin)/60*HOUR_H);
       }
       const evEl=document.createElement('div'); evEl.className='wv-ev';
-      evEl.style.cssText=`top:${topPx}px;height:${Math.max(heightPx,22)}px;background:${CAT[ev.cat]?.color||'#aaa'};`;
-      evEl.innerHTML=`<div class="wv-ev-title">${ev.title}</div>
-        <div class="wv-ev-time">${ev.timeStart.slice(0,5)}${ev.timeEnd?'–'+ev.timeEnd.slice(0,5):''}</div>`;
-      evEl.addEventListener('click',e=>{e.stopPropagation();openEvModal(dk,idx);});
+      evEl.style.cssText=`top:${topPx}px;height:${Math.max(heightPx,24)}px;background:${CAT[ev.cat]?.color||'#aaa'};`;
+      evEl.innerHTML=`<div class="wv-ev-title">${ev.title}</div><div class="wv-ev-time">${ev.timeStart.slice(0,5)}${ev.timeEnd?'–'+ev.timeEnd.slice(0,5):''}</div>`;
+      evEl.addEventListener('click',e2=>{e2.stopPropagation();openEvModal(dk,idx);});
       col.appendChild(evEl);
     });
 
     colsEl.appendChild(col);
   });
 
-  // Scroll to 7am
+  // Scroll to 8am
   const body=document.querySelector('.wv-body');
-  if(body) body.scrollTop=7*HOUR_H;
+  if(body) body.scrollTop=(8-WV_START)*HOUR_H;
 }
 
 // ── Event Modal ──
