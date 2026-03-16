@@ -256,7 +256,7 @@ const PERIODS=[
   {n:'第6節',s:'13:55',e:'14:45'},
   {n:'第7節',s:'15:00',e:'15:50'},
   {n:'第8節',s:'16:00',e:'16:50'},
-  {n:'課後',  s:'16:50',e:'18:00'},
+  {n:'備註',  s:'16:50',e:'18:00'},
 ];
 
 // Timetable: wd=1-5, pi=period index
@@ -413,7 +413,7 @@ function renderWeek(){
     // label
     const lbl=document.createElement('td');
     lbl.className='wt-plabel';
-    lbl.innerHTML=`<div class="wt-pl-name">${p.n}</div><div class="wt-pl-time">${p.s}</div>`;
+    lbl.innerHTML=`<div class="wt-pl-name">${p.n}</div>${p.n!=='備註'?`<div class="wt-pl-time">${p.s}</div>`:''}`;
     row.appendChild(lbl);
 
     days.forEach((d,ci)=>{
