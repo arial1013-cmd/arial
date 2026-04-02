@@ -2983,7 +2983,7 @@
         // Auto add fixed expenses
         function checkAndAddFixedExpenses() {
             const now = new Date();
-            const currentMonth = `${now.getFullYear()}-${now.getMonth()}`;
+            const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
             
             if (data.lastFixedUpdate !== currentMonth && data.fixedExpenses.length > 0) {
                 data.fixedExpenses.forEach((f, idx) => {
