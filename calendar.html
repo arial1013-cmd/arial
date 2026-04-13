@@ -308,7 +308,7 @@ function openEv(dk,defS,defE,idx=null){
   $('evDel').style.display=isEdit?'block':'none';
   if(isEdit){const ev=events[dk][idx];$('evN').value=ev.title;$('evS').value=ev.ts==='23:59'?'':ev.ts||'';$('evE').value=ev.te==='23:59'?'':ev.te||'';selCat=ev.cat||'personal';}
   else{$('evN').value='';$('evS').value=defS==='23:59'?'':defS;$('evE').value=defE==='23:59'?'':defE;selCat='personal';}
-  evOv._isNote=(defS==='23:59')||(editing&&events[editing.dk]?.[editing.idx]?.ts==='23:59');
+  isNoteEntry=(defS==='23:59')||(editing!==null&&events[editing.dk]?.[editing.idx]?.ts==='23:59');
   document.querySelectorAll('.cbtn').forEach(b=>b.classList.toggle('sel',b.dataset.cat===selCat));
   $('evOv').classList.add('open');setTimeout(()=>$('evN').focus(),80);
 }
@@ -317,7 +317,7 @@ $('evSav').onclick=async()=>{
   const title=$('evN').value.trim();if(!title){$('evN').focus();return;}
   $('evSav').disabled=true;$('evSav').textContent='儲存中…';$('evOv').classList.remove('open');
   setSyncing('spin','儲存中…');setLoad(true);
-  const isNoteEv=evOv._isNote||false;
+  const isNoteEv=isNoteEntry||false;
   const ts=isNoteEv?'23:59':($('evS').value||''),te=isNoteEv?'23:59':($('evE').value||'');
   if(editing){
     const old=events[editing.dk][editing.idx];
