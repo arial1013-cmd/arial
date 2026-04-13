@@ -311,7 +311,7 @@ function renderWeek(){
     const dk=dkey(d);
     const td=adr.insertCell();td.className='adcell';
     td.onclick=()=>openEv(dk,'','');
-    (events[dk]||[]).filter(ev=>!ev.ts).forEach((ev,idx)=>{
+    (events[dk]||[]).filter(ev=>(!ev.ts||ev.ts==='')&&ev.ts!=='23:59').forEach((ev,idx)=>{
       const c=document.createElement('div');c.className='adchip';
       c.style.background=CAT[ev.cat]?.color||'#aaa';c.textContent=ev.title;
       c.onclick=e=>{e.stopPropagation();openEv(dk,'','',idx);};
@@ -345,12 +345,21 @@ function renderWeek(){
       // click to add event (all cells including weekend and note)
       td.onclick=e=>{
         if(e.target===td||e.target.classList.contains('cbg'))
-          openEv(dk,isNote?'':p.s,isNote?'':p.e);
+          openEv(dk,isNote?'23:59':p.s,isNote?'23:59':p.e);
       };
 
-      // user events (skip for 備註 row — show them in all-day instead)
-      if(!isNote){
-        (events[dk]||[]).filter(ev=>ev.ts).forEach((ev,idx)=>{
+      // user events
+      if(isNote){
+        // 備註格只顯示 ts='23:59' 的事件
+        (events[dk]||[]).filter(ev=>ev.ts==='23:59').forEach((ev,idx)=>{
+          const eb=document.createElement('div');eb.className='evb';
+          eb.style.cssText='position:absolute;inset:2px;border-radius:6px;padding:3px 6px;color:#fff;font-size:.62rem;font-weight:700;cursor:pointer;z-index:3;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.18);background:'+(CAT[ev.cat]?.color||'#aaa')+';';
+          eb.innerHTML='<div class="evt">'+ev.title+'</div>';
+          eb.onclick=e=>{e.stopPropagation();openEv(dk,'23:59','23:59',idx);};
+          td.appendChild(eb);
+        });
+      } else {
+        (events[dk]||[]).filter(ev=>ev.ts&&ev.ts!=='23:59').forEach((ev,idx)=>{
           const[ph,pm]=p.s.split(':').map(Number);
           const[eh,em]=ev.ts.split(':').map(Number);
           if(Math.abs((eh*60+em)-(ph*60+pm))>30)return;
