@@ -184,7 +184,7 @@ let customHols=JSON.parse(localStorage.getItem('yh')||'[]');
 function getHols(ds){const r=[];if(FH[ds.slice(5)])r.push(FH[ds.slice(5)]);if(SH[ds])r.push(SH[ds]);customHols.forEach(h=>{if(h.r&&h.d.slice(5)===ds.slice(5))r.push(h.n);else if(!h.r&&h.d===ds)r.push(h.n);});return[...new Set(r)];}
 
 const $=id=>document.getElementById(id);
-let events={},cur=new Date(),selCat='personal',editing=null,pendingDk='';
+let events={},cur=new Date(),selCat='personal',editing=null,pendingDk='',isNoteEntry=false;
 let dayDate=new Date(cur);
 
 function dkey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
@@ -355,7 +355,7 @@ function openEv(dk,defS,defE,idx=null){
     $('evE').value=defE==='23:59'?'':defE;
     selCat='personal';
   }
-  evOv._isNote=(defS==='23:59')||(editing&&events[editing.dk]?.[editing.idx]?.ts==='23:59');
+  isNoteEntry=(defS==='23:59')||(editing!==null&&events[editing.dk]?.[editing.idx]?.ts==='23:59');
   document.querySelectorAll('.cbtn').forEach(b=>b.classList.toggle('sel',b.dataset.cat===selCat));
   $('evOv').classList.add('open');
   setTimeout(()=>$('evN').focus(),80);
@@ -370,7 +370,7 @@ $('evSav').onclick=async()=>{
   $('evSav').disabled=true;$('evSav').textContent='儲存中…';
   $('evOv').classList.remove('open');
   setSyncing('spin','儲存中…');setLoad(true);
-  const isNoteEv=evOv._isNote||false;
+  const isNoteEv=isNoteEntry||false;
   const ts=isNoteEv?'23:59':($('evS').value||''),te=isNoteEv?'23:59':($('evE').value||'');
   if(editing){
     const old=events[editing.dk][editing.idx];
