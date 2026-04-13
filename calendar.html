@@ -116,12 +116,12 @@ table.wt th:last-child,table.wt td:last-child{border-right:none;}
   font-size:.78rem;font-weight:700;cursor:pointer;line-height:1.3;}
 .dvplus{display:flex;align-items:center;justify-content:center;height:100%;min-height:56px;
   color:rgba(255,126,179,.3);font-size:1.3rem;}
-@media(max-width:680px){
+@media(max-width:900px){
   .twrap,.legend{display:none;}
   #dayView{display:block;}
   .hd h1{font-size:1.4rem;}
 }
-@media(min-width:681px){
+@media(min-width:901px){
   #dayView{display:none;}
   .twrap,.legend{display:block;}
 }
@@ -255,7 +255,7 @@ function todayKey(){return dkey(cur);}
 function fmtDk(ds){const[y,m,d]=ds.split('-');return `${y}年${+m}月${+d}日`;}
 function weekMon(d){const r=new Date(d);r.setHours(0,0,0,0);const w=r.getDay();r.setDate(r.getDate()-(w===0?6:w-1));return r;}
 function addDays(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r;}
-function isMobile(){return window.innerWidth<=680;}
+function isMobile(){return window.innerWidth<=900;}
 
 function setSyncing(st,tx){$('sdot').className='sdot '+st;$('stxt').textContent=tx;}
 function setLoad(on){$('bar').classList.toggle('on',on);}
