@@ -96,6 +96,45 @@ th:last-child,td:last-child{border-right:none;}
 .hov.open{display:flex;}
 .hrb{flex:1;padding:8px;border-radius:10px;font-weight:700;cursor:pointer;font-size:.83rem;transition:all .2s;}
 ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-thumb{background:var(--pl);border-radius:3px;}
+/* ── MOBILE DAY VIEW ── */
+@media(max-width:700px){
+  .twrap{display:none;}
+  #dayView{display:block;}
+  .app{padding:12px 8px;}
+  .hd h1{font-size:1.4rem;}
+  .legend{display:none;}
+}
+@media(min-width:701px){
+  #dayView{display:none;}
+}
+#dayView{display:none;background:var(--sur);border-radius:var(--r);
+  box-shadow:0 4px 20px rgba(255,126,179,.12);border:1.5px solid var(--bd);overflow:hidden;}
+.dv-head{display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;border-bottom:2px solid var(--bd);background:#fdf5f8;}
+.dv-title{font-family:"Nunito",sans-serif;font-weight:900;font-size:1.1rem;color:var(--p);text-align:center;flex:1;}
+.dv-sub{font-size:.7rem;color:var(--mu);font-weight:600;margin-top:2px;}
+.dv-hol{font-size:.65rem;color:#ff6b6b;font-weight:700;margin-top:2px;}
+.dv-body{padding:0;}
+.dv-row{display:flex;border-bottom:1px solid var(--bd);min-height:56px;}
+.dv-row.allday{border-bottom:2px solid var(--bd);}
+.dv-plbl{width:60px;min-width:60px;background:#fdf5f8;border-right:2px solid var(--bd);
+  padding:6px 6px 4px 4px;text-align:right;display:flex;flex-direction:column;
+  align-items:flex-end;justify-content:flex-start;}
+.dv-pn{font-family:"Nunito",sans-serif;font-size:.65rem;font-weight:800;color:var(--p);}
+.dv-pt{font-family:"Nunito",sans-serif;font-size:.52rem;color:var(--mu);}
+.dv-pcell{flex:1;position:relative;cursor:pointer;min-height:56px;transition:background .12s;}
+.dv-pcell:hover{background:rgba(255,126,179,.08);}
+.dv-course{position:absolute;inset:2px;border-radius:8px;display:flex;align-items:center;
+  justify-content:center;font-size:.75rem;font-weight:800;text-align:center;
+  line-height:1.3;pointer-events:none;}
+.dv-evb{margin:3px 4px;border-radius:8px;padding:5px 10px;color:#fff;
+  font-size:.75rem;font-weight:700;cursor:pointer;display:block;}
+.dv-evb:hover{filter:brightness(.88);}
+.dv-adchip{margin:2px 4px;border-radius:6px;padding:4px 10px;color:#fff;
+  font-size:.75rem;font-weight:700;cursor:pointer;display:block;}
+.dv-add{display:flex;align-items:center;justify-content:center;
+  color:rgba(255,126,179,.4);font-size:1.2rem;height:100%;min-height:52px;}
+
 </style>
 </head>
 <body>
@@ -128,6 +167,19 @@ th:last-child,td:last-child{border-right:none;}
   <button class="hbtn" onclick="openHol()">＋ 自訂節日</button>
 </div>
 <div class="twrap"><table id="wt"></table></div>
+
+<!-- Mobile Day View -->
+<div id="dayView">
+  <div class="dv-head">
+    <div style="flex:1;text-align:center;">
+      <div class="dv-title" id="dvTitle"></div>
+      <div class="dv-sub" id="dvSub"></div>
+      <div class="dv-hol" id="dvHol"></div>
+    </div>
+  </div>
+  <div class="dv-body" id="dvBody"></div>
+</div>
+
 </div>
 
 <!-- Event Modal -->
@@ -267,7 +319,7 @@ async function fetchEvents(){
     setSyncing('ok','已同步');
   }catch(e){setSyncing('err','連線失敗');}
   setLoad(false);
-  renderWeek();
+  renderView();
 }
 
 async function apiPost(p){
@@ -461,8 +513,144 @@ function renderHolList(){
   });
 }
 
+
+// ── MOBILE DAY VIEW ──
+const isMobile=()=>window.innerWidth<=700;
+let dayViewDate=new Date();
+
+function renderDay(d){
+  dayViewDate=new Date(d);
+  const dk=dkey(d);
+  const wd=d.getDay();
+  const WDN=['日','一','二','三','四','五','六'];
+  const hols=getHols(dk);
+  $('dvTitle').textContent=`${d.getMonth()+1} 月 ${d.getDate()} 日（週${WDN[wd]}）`;
+  $('dvSub').textContent=`${d.getFullYear()}`;
+  $('dvHol').textContent=hols.length?'🎉 '+hols.join('・'):'';
+
+  const body=$('dvBody');
+  body.innerHTML='';
+
+  // All-day row
+  const allevs=(events[dk]||[]).filter(ev=>!ev.ts||ev.ts==='');
+  if(allevs.length>0){
+    const row=document.createElement('div');
+    row.className='dv-row allday';
+    const lbl=document.createElement('div');lbl.className='dv-plbl';
+    lbl.innerHTML='<div class="dv-pn">全天</div>';
+    row.appendChild(lbl);
+    const cell=document.createElement('div');cell.className='dv-pcell';
+    cell.style.padding='4px 0';
+    cell.onclick=()=>openEv(dk,'','');
+    allevs.forEach((ev,idx)=>{
+      const c=document.createElement('div');c.className='dv-adchip';
+      c.style.background=CAT[ev.cat]?.color||'#aaa';c.textContent=ev.title;
+      c.onclick=e=>{e.stopPropagation();openEv(dk,'','',events[dk].indexOf(ev));};
+      cell.appendChild(c);
+    });
+    row.appendChild(cell);body.appendChild(row);
+  }
+
+  // Period rows
+  const isW=(wd===0||wd===6);
+  const inS=dk>=SS&&dk<=SE;
+
+  PERIODS.forEach((p,pi)=>{
+    const isNote=p.n==='備註';
+    const subj=(!isW&&inS&&TT[wd])?TT[wd][pi]:null;
+    const row=document.createElement('div');row.className='dv-row';
+
+    const lbl=document.createElement('div');lbl.className='dv-plbl';
+    lbl.innerHTML=`<div class="dv-pn">${p.n}</div>${p.s&&!isNote?`<div class="dv-pt">${p.s}</div>`:''}`;
+    row.appendChild(lbl);
+
+    const cell=document.createElement('div');cell.className='dv-pcell';
+    if(isW) cell.style.background='rgba(0,0,0,.025)';
+    else cell.style.background=MBG[d.getMonth()];
+
+    if(subj){
+      const color=SC[subj]||'#aaa';
+      cell.style.background=`linear-gradient(135deg,${color}28,${color}14)`;
+      const cb=document.createElement('div');cb.className='dv-course';
+      cb.style.color=color;cb.textContent=subj;cell.appendChild(cb);
+    }
+
+    cell.onclick=e=>{
+      if(e.target===cell||e.target.classList.contains('dv-course'))
+        openEv(dk,isNote?'23:59':p.s,isNote?'23:59':p.e);
+    };
+
+    // Events
+    const rowEvs=isNote
+      ?(events[dk]||[]).filter(ev=>ev.ts==='23:59')
+      :(events[dk]||[]).filter(ev=>ev.ts&&ev.ts!=='23:59'&&(()=>{
+          if(!p.s)return false;
+          const[ph,pm]=p.s.split(':').map(Number);
+          const[eh,em]=ev.ts.split(':').map(Number);
+          return Math.abs((eh*60+em)-(ph*60+pm))<=30;
+        })());
+
+    rowEvs.forEach((ev,i)=>{
+      const eb=document.createElement('div');eb.className='dv-evb';
+      eb.style.background=CAT[ev.cat]?.color||'#aaa';
+      eb.innerHTML=ev.title+(ev.ts&&ev.ts!=='23:59'?`<div style="font-size:.62rem;opacity:.85;">${ev.ts}${ev.te?'–'+ev.te:''}</div>`:'');
+      eb.onclick=e=>{e.stopPropagation();openEv(dk,'','',events[dk].indexOf(ev));};
+      cell.appendChild(eb);
+    });
+
+    if(!rowEvs.length&&!subj&&!isW){
+      const ph=document.createElement('div');ph.className='dv-add';ph.textContent='+';
+      cell.appendChild(ph);
+    }
+
+    row.appendChild(cell);body.appendChild(row);
+  });
+}
+
+// Swipe support
+let touchStartX=0;
+document.getElementById('dayView').addEventListener('touchstart',e=>{touchStartX=e.touches[0].clientX;},{passive:true});
+document.getElementById('dayView').addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-touchStartX;
+  if(Math.abs(dx)>50){
+    dayViewDate=addDays(dayViewDate,dx>0?-1:1);
+    renderDay(dayViewDate);
+  }
+},{passive:true});
+
+// Update nav title for mobile
+function updateNavMobile(){
+  if(isMobile()){
+    // nav prev/next control day
+    $('prevBtn').onclick=()=>{dayViewDate=addDays(dayViewDate,-1);renderDay(dayViewDate);};
+    $('nextBtn').onclick=()=>{dayViewDate=addDays(dayViewDate,1);renderDay(dayViewDate);};
+    $('todayBtn').onclick=()=>{dayViewDate=new Date(cur);renderDay(dayViewDate);};
+  } else {
+    $('prevBtn').onclick=()=>{wkStart=addDays(wkStart,-7);renderWeek();};
+    $('nextBtn').onclick=()=>{wkStart=addDays(wkStart,7);renderWeek();};
+    $('todayBtn').onclick=()=>{wkStart=weekMon(cur);renderWeek();};
+  }
+}
+
+function renderView(){
+  if(isMobile()){
+    renderDay(dayViewDate);
+    // update nav title
+    const d=dayViewDate;
+    $('navTitle').textContent=`${d.getFullYear()} 年 ${d.getMonth()+1}/${d.getDate()}`;
+  } else {
+    renderWeek();
+  }
+}
+
+window.addEventListener('resize',()=>{
+  updateNavMobile();
+  renderView();
+});
+
 // Init
-renderWeek();
+updateNavMobile();
+renderView();
 fetchEvents();
 </script>
 </body>
