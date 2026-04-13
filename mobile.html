@@ -310,7 +310,7 @@ function renderDay(d){
     }
 
     cell.onclick=e=>{
-      if(e.target===cell||e.target.classList.contains('dcourse'))
+      if(!e.target.classList.contains('dev')&&!e.target.classList.contains('dev-time'))
         openEv(dk,isNote?'23:59':p.s,isNote?'23:59':p.e);
     };
 
