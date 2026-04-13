@@ -306,9 +306,8 @@ function openEv(dk,defS,defE,idx=null){
   $('evH').textContent=isEdit?'✏️ 編輯事件':'🌸 新增事件';
   $('evDlbl').textContent='📅 '+fmtDk(dk);
   $('evDel').style.display=isEdit?'block':'none';
-  if(isEdit){const ev=events[dk][idx];$('evN').value=ev.title;$('evS').value=ev.ts==='23:59'?'':ev.ts||'';$('evE').value=ev.te==='23:59'?'':ev.te||'';selCat=ev.cat||'personal';}
-  else{$('evN').value='';$('evS').value=defS==='23:59'?'':defS;$('evE').value=defE==='23:59'?'':defE;selCat='personal';}
-  isNoteEntry=(defS==='23:59')||(editing!==null&&events[editing.dk]?.[editing.idx]?.ts==='23:59');
+  if(isEdit){const ev=events[dk][idx];$('evN').value=ev.title;$('evS').value=ev.ts==='23:59'?'23:59':ev.ts||'';$('evS').style.display=ev.ts==='23:59'?'none':'block';$('evE').value=ev.te==='23:59'?'23:59':ev.te||'';$('evE').style.display=ev.te==='23:59'?'none':'block';selCat=ev.cat||'personal';}
+  else{$('evN').value='';$('evS').value=defS==='23:59'?'23:59':defS;$('evS').style.display=defS==='23:59'?'none':'block';$('evE').value=defE==='23:59'?'23:59':defE;$('evE').style.display=defE==='23:59'?'none':'block';selCat='personal';}
   document.querySelectorAll('.cbtn').forEach(b=>b.classList.toggle('sel',b.dataset.cat===selCat));
   $('evOv').classList.add('open');setTimeout(()=>$('evN').focus(),80);
 }
@@ -317,8 +316,7 @@ $('evSav').onclick=async()=>{
   const title=$('evN').value.trim();if(!title){$('evN').focus();return;}
   $('evSav').disabled=true;$('evSav').textContent='儲存中…';$('evOv').classList.remove('open');
   setSyncing('spin','儲存中…');setLoad(true);
-  const isNoteEv=isNoteEntry||false;
-  const ts=isNoteEv?'23:59':($('evS').value||''),te=isNoteEv?'23:59':($('evE').value||'');
+  const ts=$('evS').value||'',te=$('evE').value||'';
   if(editing){
     const old=events[editing.dk][editing.idx];
     await apiPost({action:'delete',date:editing.dk,title:old.title,cat:old.cat});
