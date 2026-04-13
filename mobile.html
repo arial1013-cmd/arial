@@ -120,7 +120,7 @@ body{font-family:"Noto Sans TC",sans-serif;background:var(--bg);color:var(--text
 <div class="week-strip" id="weekStrip"></div>
 
 <!-- Hint -->
-<div class="hint">← 左右滑動切換日期 →</div>
+
 
 <!-- Day body -->
 <div class="day-body" id="dayBody"></div>
@@ -330,14 +330,7 @@ function renderDay(d){
   });
 }
 
-// Swipe
-let tx0=0;
-document.body.addEventListener('touchstart',e=>{tx0=e.touches[0].clientX;},{passive:true});
-document.body.addEventListener('touchend',e=>{
-  if($('evOv').classList.contains('open'))return;
-  const dx=e.changedTouches[0].clientX-tx0;
-  if(Math.abs(dx)>50){dayDate=addDays(dayDate,dx>0?-1:1);renderDay(dayDate);}
-},{passive:true});
+// 左右滑動已停用，使用按鍵切換
 
 $('prevBtn').onclick=()=>{dayDate=addDays(dayDate,-1);renderDay(dayDate);};
 $('nextBtn').onclick=()=>{dayDate=addDays(dayDate,1);renderDay(dayDate);};
