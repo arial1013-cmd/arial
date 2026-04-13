@@ -355,6 +355,7 @@ function openEv(dk,defS,defE,idx=null){
     $('evE').value=defE==='23:59'?'':defE;
     selCat='personal';
   }
+  evOv._isNote=(defS==='23:59')||(editing&&events[editing.dk]?.[editing.idx]?.ts==='23:59');
   document.querySelectorAll('.cbtn').forEach(b=>b.classList.toggle('sel',b.dataset.cat===selCat));
   $('evOv').classList.add('open');
   setTimeout(()=>$('evN').focus(),80);
@@ -369,7 +370,8 @@ $('evSav').onclick=async()=>{
   $('evSav').disabled=true;$('evSav').textContent='儲存中…';
   $('evOv').classList.remove('open');
   setSyncing('spin','儲存中…');setLoad(true);
-  const ts=$('evS').value||'',te=$('evE').value||'';
+  const isNoteEv=evOv._isNote||false;
+  const ts=isNoteEv?'23:59':($('evS').value||''),te=isNoteEv?'23:59':($('evE').value||'');
   if(editing){
     const old=events[editing.dk][editing.idx];
     await apiPost({action:'delete',date:editing.dk,title:old.title,cat:old.cat});
