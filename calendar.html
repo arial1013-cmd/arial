@@ -460,7 +460,8 @@ function renderWeek(){
         };
       }
 
-      // user events
+      // user events (skip for 備註 row)
+      if(p.n==='備註') return;
       (events[dk]||[]).filter(ev=>ev.ts).forEach((ev,idx)=>{
         // match to this period (within 30 min of period start)
         const [ph,pm]=p.s.split(':').map(Number);
