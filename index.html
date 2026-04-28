@@ -294,6 +294,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg-primary);color:va
     </div>
     <div class="chart-section"><div class="chart-title">支出分布</div><div class="pie-chart-container"><div class="pie-chart" id="pieChart"></div><div class="chart-legend" id="chartLegend"></div></div></div>
     <div class="card-section"><div class="chart-title">信用卡帳單</div><div id="cardSummary"></div></div>
+    <div class="chart-section"><div class="chart-title">本月預算狀況</div><div class="budget-card" style="background:transparent;padding:0" id="reportBudgetCard"><div class="empty-state" style="padding:12px 0"><div class="empty-text" style="font-size:13px">尚未設定預算</div></div></div></div>
     <div class="chart-section"><div class="chart-title">固定支出</div><div id="reportFixedList"><div class="empty-state"><div class="empty-text">尚未設定固定支出</div></div></div></div>
   </div>
 </div>
@@ -582,6 +583,18 @@ function updateReport(){
     let dm=m,dy=y;if(!card.dueSameMonth){dm++;if(dm>11){dm=0;dy++;}}
     return`<div class="card-bill-item"><div class="card-bill-header"><div class="card-bill-name">💳 ${card.name}</div><div class="card-bill-amount">$${bill.toLocaleString()}</div></div><div class="card-bill-info"><span>📅 ${sm+1}/${card.closeDay+1}~${m+1}/${card.closeDay}</span><span>💰 繳款 ${dm+1}/${card.dueDay}</span></div></div>`;
   }).join('');
+  // 預算區塊（依選擇的月份計算）
+  const rbc=document.getElementById('reportBudgetCard');
+  const hasBudget=budgets.total||budgets.food||budgets.grocery||budgets.entertain||budgets.shopping;
+  if(!hasBudget){rbc.innerHTML='<div class="empty-state" style="padding:12px 0"><div class="empty-text" style="font-size:13px">尚未設定預算，到「🎯 預算」頁設定</div></div>';}
+  else{
+    const rme=getMonthEntries(reportMonth).filter(e=>e.type==='expense'&&!e.note.startsWith('固定支出：'));
+    const ru={total:rme.reduce((s,e)=>s+e.amount,0),food:rme.filter(e=>e.category==='food').reduce((s,e)=>s+e.amount,0),grocery:rme.filter(e=>e.category==='grocery').reduce((s,e)=>s+e.amount,0),entertain:rme.filter(e=>e.category==='entertainment'||e.category==='game').reduce((s,e)=>s+e.amount,0),shopping:rme.filter(e=>e.category==='shopping').reduce((s,e)=>s+e.amount,0)};
+    let bhtml='';
+    if(budgets.total){bhtml+=renderBar(ru.total,budgets.total,'總變動支出','📊');if(budgets.food||budgets.grocery||budgets.entertain||budgets.shopping)bhtml+='<div class="budget-divider"></div>';}
+    bhtml+=renderBar(ru.food,budgets.food,'外食','🍜');bhtml+=renderBar(ru.grocery,budgets.grocery,'食材','🥬');bhtml+=renderBar(ru.entertain,budgets.entertain,'娛樂','🎬');bhtml+=renderBar(ru.shopping,budgets.shopping,'購物','🛍️');
+    rbc.innerHTML=bhtml;
+  }
   const ft=data.fixedExpenses.reduce((s,f)=>s+f.amount,0);
   document.getElementById('reportFixedList').innerHTML=data.fixedExpenses.length>0?data.fixedExpenses.map(f=>`<div class="card-item"><div>${f.name}</div><div class="card-amount">$${f.amount.toLocaleString()}</div></div>`).join('')+`<div class="card-item" style="border-top:2px solid var(--bg-input);margin-top:8px;padding-top:12px"><div style="font-weight:600">總計</div><div class="card-amount">$${ft.toLocaleString()}</div></div>`:'<div class="empty-state"><div class="empty-text">尚未設定固定支出</div></div>';
 }
