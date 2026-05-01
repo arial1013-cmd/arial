@@ -371,7 +371,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg-primary);color:va
       </div>
     </div>
     <div class="settings-section"><div class="backup-reminder"><div class="reminder-icon">💡</div><div class="reminder-text"><strong>建議每週備份一次</strong><br>iOS Safari 可能清除資料，定期匯出確保安全</div></div></div>
-    <div class="settings-footer">🐟 魚兒記帳本 v1.1（含預算功能）</div>
+    <div class="settings-footer">🐟 魚兒記帳本 v1.2（修復固定支出同步問題）</div>
   </div>
 </div>
 
@@ -456,8 +456,14 @@ const cats={
 const pays={cash:{name:'現金'},esun:{name:'玉山',closeDay:15,dueDay:30,dueSameMonth:true},taishin:{name:'台新',closeDay:2,dueDay:19,dueSameMonth:true},dbs:{name:'星展',closeDay:23,dueDay:12,dueSameMonth:false}};
 
 document.addEventListener('DOMContentLoaded',()=>{
-  loadData(); loadBudgets(); checkFixedExpenses(); updateHomeView(); setToday();
+  loadDataLocal();
+  loadBudgets();
+  // 先用本地資料顯示畫面
+  updateHomeView();
+  setToday();
   bindLongPress('recentList');
+  // 然後從雲端同步，同步完成後再檢查固定支出
+  loadFromCloud();
 });
 
 // ===== 預算 =====
@@ -501,15 +507,40 @@ function renderBudget(){
 }
 
 // ===== 資料 =====
-function loadData(){const s=localStorage.getItem(STORAGE_KEY);if(s)data=JSON.parse(s);loadFromCloud();}
-function saveData(){localStorage.setItem(STORAGE_KEY,JSON.stringify(data));saveToCloud();}
-async function loadFromCloud(){
-  try{showSync('正在同步...');
-  const r=await fetch(`${GS_URL}?action=load&t=${Date.now()}`,{method:'GET',redirect:'follow'});
-  const j=await r.json();
-  if(j.success&&j.data&&j.data.entries&&j.data.entries.length>0){data=j.data;localStorage.setItem(STORAGE_KEY,JSON.stringify(data));updateHomeView();renderBudget();showSync('已同步 ✓',true);}else{showSync('同步完成',true);}
-  }catch(e){showSync('使用本地資料',false);}
+// 只從 localStorage 載入，不觸發雲端同步
+function loadDataLocal(){
+  const s=localStorage.getItem(STORAGE_KEY);
+  if(s) data=JSON.parse(s);
 }
+
+// 儲存到 localStorage 並同步到雲端
+function saveData(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+  saveToCloud();
+}
+
+// 從雲端載入，載入後執行 checkFixedExpenses
+async function loadFromCloud(){
+  try{
+    showSync('正在同步...');
+    const r=await fetch(`${GS_URL}?action=load&t=${Date.now()}`,{method:'GET',redirect:'follow'});
+    const j=await r.json();
+    if(j.success && j.data && j.data.entries && j.data.entries.length>0){
+      data=j.data;
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+      showSync('已同步 ✓',true);
+    } else {
+      showSync('同步完成',true);
+    }
+  } catch(e){
+    showSync('使用本地資料',false);
+  }
+  // 關鍵修復：雲端同步完成後再檢查固定支出
+  checkFixedExpenses();
+  updateHomeView();
+  renderBudget();
+}
+
 async function saveToCloud(){
   if(isSyncing)return;isSyncing=true;
   try{showSync('正在儲存...');await fetch(GS_URL,{method:'POST',mode:'no-cors',body:`action=save&data=${encodeURIComponent(JSON.stringify(data))}`});
@@ -645,9 +676,33 @@ function saveFixed(){
 }
 function editFixed(id){openFixedModal(id);}
 function deleteFixed(id){if(confirm('確定要刪除？')){data.fixedExpenses=data.fixedExpenses.filter(f=>f.id!==id);saveData();renderFixedList();showToast('已刪除！');}}
+
+// 檢查並加入本月固定支出
 function checkFixedExpenses(){
-  const now=new Date();const cm=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  if(data.lastFixedUpdate!==cm&&data.fixedExpenses.length>0){data.fixedExpenses.forEach((f,i)=>data.entries.push({id:Date.now()+i,type:'expense',category:f.category,amount:f.amount,payment:f.payment,note:`固定支出：${f.name}`,date:`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`}));data.lastFixedUpdate=cm;saveData();}
+  const now=new Date();
+  const cm=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  console.log('[checkFixedExpenses] 當前月份:', cm, '上次更新:', data.lastFixedUpdate, '固定支出數量:', data.fixedExpenses.length);
+  if(data.lastFixedUpdate!==cm && data.fixedExpenses.length>0){
+    console.log('[checkFixedExpenses] 開始加入本月固定支出...');
+    data.fixedExpenses.forEach((f,i)=>{
+      const entry = {
+        id: Date.now()+i,
+        type:'expense',
+        category:f.category,
+        amount:f.amount,
+        payment:f.payment,
+        note:`固定支出：${f.name}`,
+        date:`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`
+      };
+      data.entries.push(entry);
+      console.log('[checkFixedExpenses] 已加入:', entry.note, entry.amount);
+    });
+    data.lastFixedUpdate=cm;
+    saveData();
+    console.log('[checkFixedExpenses] 完成，lastFixedUpdate 更新為:', cm);
+  } else {
+    console.log('[checkFixedExpenses] 不需要加入（已是本月或無固定支出）');
+  }
 }
 
 // ===== 編輯記錄 =====
