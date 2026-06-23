@@ -543,7 +543,7 @@ async function loadFromCloud(){
 
 async function saveToCloud(){
   if(isSyncing)return;isSyncing=true;
-  try{showSync('正在儲存...');await fetch(GS_URL,{method:'POST',mode:'no-cors',body:`action=save&data=${encodeURIComponent(JSON.stringify(data))}`});
+  try{showSync('正在儲存...');await fetch(GS_URL,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`action=save&data=${encodeURIComponent(JSON.stringify(data))}`});
   setTimeout(async()=>{try{const r=await fetch(`${GS_URL}?action=load&t=${Date.now()}`);const j=await r.json();showSync(j.success&&j.data&&j.data.entries&&j.data.entries.length>0?'已儲存 ✓':'已送出',true);}catch(e){showSync('已送出',true);}},1500);}
   catch(e){showSync('離線模式',false);}isSyncing=false;
 }
