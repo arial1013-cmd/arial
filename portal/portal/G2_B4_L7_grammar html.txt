@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>G2 L7 文法分組練習</title>
+<style>
+:root {
+  --indigo:      #3d4f9e;
+  --indigo-mid:  #5a6fc7;
+  --indigo-light:#8fa3e8;
+  --indigo-pale: #e8ecfa;
+  --indigo-bg:   #f2f4fc;
+  --purple:      #6c3483;
+  --purple-pale: #f4ecf7;
+  --green:       #57cc99;
+  --green-dk:    #1a5c35;
+  --coral:       #e76f51;
+  --amber:       #c9a227;
+  --gray:        #7a82b0;
+  --dark:        #1e2242;
+  --mid:         #3a4278;
+  --light:       #8089b5;
+  --white:       #ffffff;
+  --shadow:      0 2px 10px rgba(61,79,158,0.10);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans TC',system-ui,sans-serif;background:var(--indigo-bg);color:var(--dark);min-height:100vh;}
+
+header{background:var(--indigo);padding:20px 18px 16px;text-align:center;}
+header h1{color:#fff;font-size:20px;font-weight:700;margin-bottom:4px;}
+header p{color:rgba(255,255,255,0.75);font-size:13px;}
+
+.progress-wrap{background:var(--white);padding:12px 18px;border-bottom:1px solid var(--indigo-pale);}
+.prog-label{font-size:12px;color:var(--light);margin-bottom:6px;display:flex;justify-content:space-between;}
+.prog-bar{height:6px;background:#d8ddf0;border-radius:99px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--indigo-mid);border-radius:99px;transition:width 0.4s;}
+
+.group-tabs{display:flex;overflow-x:auto;background:var(--white);border-bottom:1px solid var(--indigo-pale);}
+.group-tab{flex:0 0 auto;padding:10px 16px;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:600;color:var(--gray);cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s;white-space:nowrap;}
+.group-tab.active{color:var(--indigo);border-bottom-color:var(--indigo-mid);background:var(--indigo-pale);}
+.group-tab.locked{color:#ccc;cursor:not-allowed;}
+.group-tab.prereq-tab.active{color:var(--purple);border-bottom-color:var(--purple);background:var(--purple-pale);}
+
+main{padding:16px 14px 60px;max-width:700px;margin:0 auto;}
+
+/* Phase bar */
+.phase-bar{display:flex;gap:6px;margin-bottom:18px;}
+.phase-step{flex:1;padding:8px 4px;border-radius:8px;text-align:center;font-size:12px;font-weight:700;}
+.phase-step.done{background:var(--green);color:#fff;}
+.phase-step.current{background:var(--indigo);color:#fff;}
+.phase-step.current.prereq{background:var(--purple);}
+.phase-step.pending{background:#e5e8f8;color:var(--gray);}
+
+/* Formula card */
+.formula-card{background:var(--white);border-radius:14px;padding:16px 18px;margin-bottom:14px;box-shadow:var(--shadow);}
+.formula-card.prereq{border-left:4px solid var(--purple);}
+.formula-card.main{border-left:4px solid var(--indigo-light);}
+.formula-title{font-size:15px;font-weight:900;margin-bottom:8px;}
+.formula-title.prereq{color:var(--purple);}
+.formula-title.main{color:var(--indigo);}
+.formula-box{background:#eef2ff;border:1.5px solid #b0bdf8;border-radius:8px;padding:10px 14px;font-size:13px;color:#2c3e7a;line-height:2;margin-bottom:10px;font-family:'Courier New',monospace;}
+.formula-box b{font-family:'Noto Sans TC',sans-serif;}
+.explain{font-size:13px;color:var(--light);margin-bottom:10px;line-height:1.7;}
+.ex-row{background:var(--indigo-pale);border-left:3px solid var(--indigo-light);padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:6px;font-size:13px;}
+.ex-row.prereq{background:var(--purple-pale);border-left-color:#c39bd3;}
+.ex-row em{font-style:italic;color:var(--mid);}
+.ex-row b{color:var(--indigo);font-style:normal;}
+.ex-row b.pu{color:var(--purple);}
+.ex-note{font-size:11px;color:var(--amber);font-weight:700;margin-left:6px;}
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.cmp{border-radius:8px;padding:10px 12px;font-size:12.5px;}
+.cmp.pres{background:var(--indigo-pale);border:1.5px solid var(--indigo-light);}
+.cmp.past{background:var(--purple-pale);border:1.5px solid #c39bd3;}
+.cmp .ct{font-weight:700;font-size:11px;margin-bottom:5px;}
+.cmp.pres .ct{color:var(--indigo);}
+.cmp.past .ct{color:var(--purple);}
+.cmp code{font-size:12px;line-height:1.9;display:block;}
+
+/* MCQ */
+.mcq-block{margin-bottom:14px;}
+.mcq-q{background:var(--white);border-radius:12px;padding:14px 16px 10px;box-shadow:var(--shadow);}
+.mcq-qtext{font-size:15px;font-weight:600;margin-bottom:10px;line-height:1.65;}
+.mcq-qtext em{font-style:italic;color:var(--indigo-mid);}
+.mcq-qtext b{color:var(--indigo);}
+.mcq-options{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.mcq-opt{padding:10px 12px;border:2px solid var(--indigo-pale);border-radius:10px;background:var(--white);font-family:inherit;font-size:13.5px;color:var(--dark);cursor:pointer;transition:all 0.15s;text-align:left;line-height:1.5;}
+.mcq-opt:hover:not(:disabled){background:var(--indigo-pale);border-color:var(--indigo-light);}
+.mcq-opt.correct{background:#d4f5e5;border-color:#57cc99;color:var(--green-dk);}
+.mcq-opt.wrong{background:#fde4de;border-color:var(--coral);color:#7a2000;}
+.mcq-opt:disabled{cursor:default;}
+.feedback{font-size:13px;margin-top:7px;padding:6px 11px;border-radius:7px;display:none;line-height:1.6;}
+.feedback.ok{background:#d4f5e5;color:var(--green-dk);display:block;}
+.feedback.ng{background:#fde4de;color:#7a2000;display:block;}
+
+/* Fill-in / Rewrite */
+.fill-block{background:var(--white);border-radius:12px;padding:16px;box-shadow:var(--shadow);margin-bottom:14px;}
+.fill-label{font-size:11px;font-weight:700;color:var(--light);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;}
+.fill-q{margin-bottom:14px;}
+.fill-qtext{font-size:14.5px;margin-bottom:7px;line-height:1.65;color:var(--dark);}
+.fill-qtext em{font-style:italic;}
+.fill-hint{font-size:12px;color:var(--gray);margin-bottom:6px;}
+.fill-input{width:100%;border:2px solid var(--indigo-pale);border-radius:8px;padding:9px 12px;font-family:inherit;font-size:14px;color:var(--dark);outline:none;transition:border-color 0.15s;background:#fafbff;}
+.fill-input:focus{border-color:var(--indigo-mid);}
+.fill-input.ok{border-color:#57cc99;background:#f0fdf7;}
+.fill-input.ng{border-color:var(--coral);background:#fff5f3;}
+.fill-ans{font-size:13px;margin-top:5px;padding:6px 10px;border-radius:6px;display:none;}
+.fill-ans.ok{background:#d4f5e5;color:var(--green-dk);display:block;}
+.fill-ans.ng{background:#fde4de;color:#7a2000;display:block;}
+.check-btn{margin-top:8px;padding:8px 18px;background:var(--indigo);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;}
+.check-btn:hover{background:var(--indigo-mid);}
+.check-btn:disabled{background:#ccc;cursor:default;}
+
+/* Score / Done */
+.score-wrap{text-align:center;padding:24px 0 12px;}
+.score-circle{width:80px;height:80px;border-radius:50%;border:5px solid var(--indigo-mid);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:var(--indigo);margin-bottom:10px;}
+.score-msg{font-size:15px;font-weight:700;color:var(--mid);}
+
+/* Buttons */
+.next-btn,.unlock-btn{display:block;width:100%;padding:13px;margin-top:14px;border:none;border-radius:12px;background:var(--indigo);color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:background 0.2s;}
+.next-btn:hover,.unlock-btn:hover{background:var(--indigo-mid);}
+.next-btn:disabled{background:#ccc;cursor:not-allowed;}
+
+.q-counter{font-size:12px;color:var(--light);text-align:right;margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>L7 文法分組練習</h1>
+  <p>Iceland's Road to Gender Equality · 先備 + 句型 · 共 4 組</p>
+</header>
+
+<div class="progress-wrap">
+  <div class="prog-label">
+    <span>整體進度</span>
+    <span id="prog-text">0 / 4 組完成</span>
+  </div>
+  <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+</div>
+
+<div class="group-tabs" id="group-tabs">
+  <button class="group-tab prereq-tab active" id="tab-0">先備① 假設語氣</button>
+  <button class="group-tab locked" id="tab-1">句型① Without/But for 🔒</button>
+  <button class="group-tab prereq-tab locked" id="tab-2">先備② 關係子句 🔒</button>
+  <button class="group-tab locked" id="tab-3">句型② where/when 🔒</button>
+</div>
+
+<main id="main-area"></main>
+
+<script>
+// ══════════════════════════════════════════════
+// 資料
+// ══════════════════════════════════════════════
+const GROUPS = [
+  // ── 0: 先備① 假設語氣（與現在事實相反）──
+  {
+    id: 0, type: 'prereq',
+    label: '先備① 假設語氣',
+    formula: {
+      title: '📚 假設語氣（與現在事實相反）',
+      box: 'If + S + <b>were / V-ed</b>...,\nS + <b>would / could / might + VR</b>...',
+      explain: '想像一個「和現實相反」的情況。if 子句用過去式（be 動詞一律用 were），主要子句用 would / could / might + 原形動詞。',
+      examples: [
+        { en: 'If I <b>were</b> a bird, I <b>would fly</b> around the world.', note: '（事實：我不是鳥）' },
+        { en: 'If she <b>had</b> more time, she <b>could travel</b> more.', note: '（事實：她沒有很多時間）' },
+        { en: 'If he <b>were</b> taller, he <b>might join</b> the basketball team.', note: '（事實：他不夠高）' },
+      ]
+    },
+    mcq: [
+      { q: 'If I ______ a doctor, I would help many people.', opts: ['(A) am', '(B) were', '(C) be', '(D) will be'], ans: 1, exp: '假設語氣與現在相反，be 動詞一律用 were。' },
+      { q: 'She would travel more if she ______ more vacation days.', opts: ['(A) has', '(B) have', '(C) had', '(D) will have'], ans: 2, exp: 'if 子句用過去式 had，表示與現在相反的假設。' },
+      { q: 'If it ______ not rain today, we could go hiking.', opts: ['(A) does', '(B) did', '(C) were', '(D) had'], ans: 2, exp: '假設語氣現在式，動詞用過去式 did（not rain → did not rain）。' },
+      { q: 'Tom ______ happier if he had more friends.', opts: ['(A) is', '(B) will be', '(C) would be', '(D) was'], ans: 2, exp: '主要子句用 would + 原形動詞 be。' },
+    ],
+    fill: [
+      { type: 'fill', q: '如果我現在在台灣，我們就可以一起吃飯。\nIf he ______ in Taiwan now, we could have dinner together.', ans: ['were'], hint: '（be 動詞在假設語氣中一律用 were）' },
+      { type: 'fill', q: '如果她有一隻狗，她就會每天帶牠去散步。\nIf she ______ a dog, she would walk it every day.', ans: ['had'], hint: '（have → 過去式）' },
+      { type: 'rewrite', q: '改寫為假設語氣：I don\'t have a car, so I can\'t drive to work.', ans: ['If I had a car, I could drive to work.', 'If I had a car, I would drive to work.'], hint: '（若有……就能……）' },
+      { type: 'fill', q: '如果他更努力，他就可能通過考試。\nIf he ______ harder, he might pass the exam.', ans: ['studied', 'worked'], hint: '（study / work → 過去式）' },
+    ]
+  },
+
+  // ── 1: 句型① If it were not for / Without / But for ──
+  {
+    id: 1, type: 'main',
+    label: '句型① Without/But for',
+    formula: {
+      title: '📗 句型一　If it were not for / Without + N…（若沒有……）',
+      compare: [
+        { label: '🔵 與現在相反', lines: ['If it <b>were not for</b> + N,', 'But for / Without + N,', '→ S + would/could/might + <b>VR</b>'] },
+        { label: '🟣 與過去相反', lines: ['If it <b>had not been for</b> + N,', 'But for / Without + N,', '→ S + would/could/might + <b>have p.p.</b>'] },
+      ],
+      explain: 'If it were not for / But for / Without 三種說法可互換。看主要子句的動詞形式判斷是現在還是過去。',
+      examples: [
+        { en: '<b>Without</b> equal pay laws, women would still earn less than men.', note: '（現在）' },
+        { en: '<b>But for</b> Iceland\'s bold move, the world might not have noticed the problem.', note: '（過去）' },
+        { en: 'If it <b>had not been for</b> those protests, nothing would have changed.', note: '（過去）' },
+      ]
+    },
+    mcq: [
+      { q: 'If it ______ not ______ the equal pay law, women would still earn less.', opts: ['(A) is / for', '(B) were / for', '(C) had / been', '(D) has / been'], ans: 1, exp: '主要子句 would earn（原形）→ 與現在相反 → were not for。' },
+      { q: '______ air and water, no living things would survive on Earth.', opts: ['(A) If it were not', '(B) Without', '(C) If it had not been for', '(D) But'], ans: 1, exp: '(A) 少 for，(D) But 後需接 for，(B) Without 正確。' },
+      { q: 'If it had not been for those women\'s protests, the law ______ passed.', opts: ['(A) would not be', '(B) will not be', '(C) would not have been', '(D) had not been'], ans: 2, exp: '過去事實相反 → would not have been（have + p.p.）。' },
+      { q: 'But for Iceland\'s bold decision, other countries ______ the idea of equal pay laws.', opts: ['(A) might never consider', '(B) might never have considered', '(C) will never consider', '(D) had never considered'], ans: 1, exp: '過去 → might never have considered。' },
+    ],
+    fill: [
+      { type: 'fill', q: '若沒有她的幫助，我現在就不會成功。（用 Without…）\nWithout her help, I ______ succeed now.', ans: ['would not', "wouldn't"], hint: '（現在事實相反 → would not + VR）' },
+      { type: 'fill', q: '若非當時有這把傘，我就全身濕透了。（用 If it had not been for…）\nIf it had not been for the umbrella, I ______ soaked.', ans: ['would have been', "would've been"], hint: '（過去 → would have been）' },
+      { type: 'rewrite', q: '用 But for 改寫：\nBecause of the doctor\'s help, I am alive today.', ans: ['But for the doctor\'s help, I would not be alive today.', 'But for the doctor\'s help, I wouldn\'t be alive today.'], hint: '（若非……我就不會……）' },
+      { type: 'fill', q: '若非冰島的大膽行動，世界可能至今還沒注意到同酬的問題。\nBut for Iceland\'s bold move, the world might never ______ the problem.', ans: ['have noticed'], hint: '（過去 → might never have p.p.）' },
+    ]
+  },
+
+  // ── 2: 先備② 關係子句（who / which / that）──
+  {
+    id: 2, type: 'prereq',
+    label: '先備② 關係子句',
+    formula: {
+      title: '📚 關係子句（who / which / that）',
+      box: 'N + <b>who</b> / <b>which</b> / <b>that</b> + 動詞...',
+      explain: '關係子句補充說明前面的名詞（先行詞）。\nwho → 代替「人」　which → 代替「物」　that → 人或物皆可用',
+      examples: [
+        { en: 'She is a woman <b class="pu">who</b> fought for equal rights.', note: '（who 修飾 woman）', pu: true },
+        { en: 'I have a dog <b>that</b> loves to play in the park.', note: '（that 修飾 dog）' },
+        { en: 'This is a law <b>that</b> changed Iceland forever.', note: '（that 修飾 law）' },
+      ]
+    },
+    mcq: [
+      { q: 'She is the teacher ______ helped me the most last year.', opts: ['(A) which', '(B) where', '(C) who', '(D) when'], ans: 2, exp: '先行詞 teacher 為人 → 用 who。' },
+      { q: 'I bought a book ______ was written by a famous author.', opts: ['(A) who', '(B) when', '(C) where', '(D) which'], ans: 3, exp: '先行詞 book 為物 → 用 which 或 that。' },
+      { q: 'Iceland is a country ______ has equal pay laws.', opts: ['(A) who', '(B) which', '(C) when', '(D) where'], ans: 1, exp: '先行詞 country 為物 → 用 which（或 that）。注意：此句關係詞做主詞。' },
+      { q: 'The women ______ marched in 1975 changed Iceland\'s history.', opts: ['(A) which', '(B) where', '(C) when', '(D) who'], ans: 3, exp: '先行詞 women 為人 → 用 who。' },
+    ],
+    fill: [
+      { type: 'rewrite', q: '用 who 合併句子：\nShe is a student. The student won the first prize.', ans: ['She is a student who won the first prize.', 'She is the student who won the first prize.'], hint: '（who 取代 the student）' },
+      { type: 'fill', q: '我有一隻貓，牠每天睡十二個小時。\nI have a cat ______ sleeps twelve hours a day.', ans: ['that', 'which'], hint: '（cat 為物，用 that 或 which）' },
+      { type: 'rewrite', q: '用 which 合併句子：\nThis is the law. The law made Iceland famous.', ans: ['This is the law which made Iceland famous.', 'This is the law that made Iceland famous.'], hint: '（which / that 取代 the law）' },
+      { type: 'fill', q: '這是那位帶領平等運動的女性。\nThis is the woman ______ led the equality movement.', ans: ['who', 'that'], hint: '（woman 為人，用 who 或 that）' },
+    ]
+  },
+
+  // ── 3: 句型② N (,) where/when（關係副詞）──
+  {
+    id: 3, type: 'main',
+    label: '句型② where/when',
+    formula: {
+      title: '📗 句型二　N (,) where / when…（關係副詞）',
+      box: 'N + <b>where</b> + 子句　（先行詞為地方）\nN + <b>when</b> + 子句　（先行詞為時間）\nN <b>, where</b> / <b>, when</b> + 子句　（非限定，先行詞已唯一）',
+      explain: 'where / when 是關係副詞，取代「in which」等。\n限定用法（不加逗號）：界定是哪一個。\n非限定用法（加逗號）：先行詞唯一，子句為補充說明。',
+      examples: [
+        { en: 'Iceland is a country <b>where</b> equal pay is required by law.', note: '（限定）' },
+        { en: '2018 was the year <b>when</b> Iceland\'s equal pay law came into effect.', note: '（限定）' },
+        { en: 'We visited Reykjavík<b>, where</b> women first marched for equal rights.', note: '（非限定）' },
+        { en: 'My grandpa was born in 1932<b>, when</b> most countries were suffering from a depression.', note: '（非限定）' },
+      ]
+    },
+    mcq: [
+      { q: 'Iceland is a country ______ equal pay is required by law.', opts: ['(A) who', '(B) which', '(C) where', '(D) when'], ans: 2, exp: 'country 為地方名詞 → 用 where（= in which）。' },
+      { q: '2018 was the year ______ Iceland\'s equal pay law came into effect.', opts: ['(A) where', '(B) when', '(C) which', '(D) who'], ans: 1, exp: 'year 為時間名詞 → 用 when。' },
+      { q: 'My grandmother was born in 1950 ______ most women stayed at home.', opts: ['(A) where', '(B) when', '(C) , when', '(D) , where'], ans: 2, exp: '1950 為特定年份已唯一確定 → 非限定，加逗號 → , when。' },
+      { q: 'This is the office ______ the equal pay law was first discussed.', opts: ['(A) when', '(B) who', '(C) which', '(D) where'], ans: 3, exp: 'office 為地方名詞 → where。注意：where 取代「in which」。' },
+    ],
+    fill: [
+      { type: 'fill', q: '這裡是我度過青少年時代的地方。\nThis is the place ______ I spent my teens.', ans: ['where'], hint: '（place 為地方名詞 → where）' },
+      { type: 'fill', q: '那一天是我生命中最難忘的日子。\nThat was the day ______ I will never forget. \n（提示：此句關係詞做受詞，可省略或填 when）', ans: ['when', ''], hint: '（day 為時間名詞 → when；做受詞可省略）' },
+      { type: 'rewrite', q: '用關係副詞合併句子：\nThis is a small country. Most people don\'t have access to the Internet in this country.', ans: ['This is a small country where most people don\'t have access to the Internet.'], hint: '（in this country → where）' },
+      { type: 'rewrite', q: '用關係副詞合併句子：\nShe was born in 2005. In 2005, smartphones became popular.', ans: ['She was born in 2005, when smartphones became popular.'], hint: '（2005 已唯一 → 非限定，加逗號）' },
+    ]
+  },
+];
+
+// ══════════════════════════════════════════════
+// 狀態
+// ══════════════════════════════════════════════
+const S = { group: 0, phase: 0, done: [false,false,false,false],
+  mcqAnswered: [0,0,0,0], fillChecked: [[],[],[],[]] };
+
+document.querySelectorAll('.group-tab').forEach((t,i) => {
+  t.addEventListener('click', () => { if(!t.classList.contains('locked')) setGroup(i); });
+});
+
+function setGroup(g) {
+  S.group = g;
+  S.phase = S.done[g] ? 3 : 0;
+  document.querySelectorAll('.group-tab').forEach((t,i) => {
+    t.classList.toggle('active', i===g);
+    t.classList.toggle('prereq-tab', GROUPS[i].type==='prereq');
+  });
+  render();
+}
+
+function updateProg() {
+  const d = S.done.filter(Boolean).length;
+  document.getElementById('prog-text').textContent = `${d} / 4 組完成`;
+  document.getElementById('prog-fill').style.width = `${d/4*100}%`;
+}
+
+function phaseBar(cur, type) {
+  const steps = ['📝 選擇題', '✏️ 填空/改寫', '✅ 完成'];
+  return steps.map((s,i) => {
+    const cls = i < cur ? 'done' : i===cur ? `current${type==='prereq'?' prereq':''}` : 'pending';
+    return `<div class="phase-step ${cls}">${i<cur?'✓ ':''}${s}</div>`;
+  }).join('');
+}
+
+function render() {
+  const g = S.group, p = S.phase;
+  const grp = GROUPS[g];
+  const area = document.getElementById('main-area');
+  if(p===0) renderFormula(grp, area);
+  else if(p===1) renderMcq(grp, area);
+  else if(p===2) renderFill(grp, area);
+  else renderDone(g, area);
+}
+
+// ── 公式卡 ──
+function renderFormula(grp, area) {
+  const f = grp.formula, t = grp.type;
+  let exHtml = grp.formula.examples.map(e =>
+    `<div class="ex-row ${t==='prereq'?'prereq':''}">
+      <em>${e.en}</em><span class="ex-note">${e.note}</span>
+    </div>`).join('');
+
+  let compareHtml = '';
+  if(f.compare) {
+    compareHtml = `<div class="compare-grid">${f.compare.map(c=>
+      `<div class="cmp ${c.label.includes('🔵')?'pres':'past'}">
+        <div class="ct">${c.label}</div>
+        <code>${c.lines.map(l=>`<span>${l}</span>`).join('<br>')}</code>
+      </div>`).join('')}</div>`;
+  }
+
+  let formulaHtml = f.box
+    ? `<div class="formula-box">${f.box.replace(/\n/g,'<br>')}</div>`
+    : compareHtml;
+
+  area.innerHTML = `
+    <div class="phase-bar">${phaseBar(0, t)}</div>
+    <div class="formula-card ${t}">
+      <div class="formula-title ${t}">${f.title}</div>
+      ${formulaHtml}
+      <div class="explain">${f.explain.replace(/\n/g,'<br>')}</div>
+      ${exHtml}
+    </div>
+    <button class="next-btn" onclick="S.phase=1;render()">了解了！去做選擇題 →</button>`;
+}
+
+// ── 選擇題 ──
+function renderMcq(grp, area) {
+  const g = grp.id, t = grp.type;
+  S.mcqAnswered[g] = 0;
+  const html = grp.mcq.map((q,qi) => {
+    const optsHtml = q.opts.map((o,oi) =>
+      `<button class="mcq-opt" onclick="pickMcq(this,${g},${qi},${oi})">${o}</button>`
+    ).join('');
+    return `<div class="mcq-block" id="mq${g}_${qi}">
+      <div class="mcq-q">
+        <div class="q-counter">Q${qi+1} / ${grp.mcq.length}</div>
+        <div class="mcq-qtext">${q.q}</div>
+        <div class="mcq-options">${optsHtml}</div>
+        <div class="feedback" id="mfb${g}_${qi}"></div>
+      </div></div>`;
+  }).join('');
+  area.innerHTML = `
+    <div class="phase-bar">${phaseBar(1, t)}</div>
+    ${html}
+    <button class="next-btn" id="toFill" onclick="S.phase=2;render()" disabled>全部作答後繼續 →</button>`;
+}
+
+function pickMcq(btn, g, qi, chosen) {
+  const block = document.getElementById(`mq${g}_${qi}`);
+  if(block.querySelector('.correct,.wrong')) return;
+  const q = GROUPS[g].mcq[qi];
+  block.querySelectorAll('.mcq-opt').forEach(o => o.disabled=true);
+  const ok = chosen === q.ans;
+  btn.classList.add(ok ? 'correct' : 'wrong');
+  if(!ok) block.querySelectorAll('.mcq-opt')[q.ans].classList.add('correct');
+  const fb = document.getElementById(`mfb${g}_${qi}`);
+  fb.className = `feedback ${ok?'ok':'ng'}`;
+  fb.innerHTML = ok ? '✓ 正確！' : `✗ 答案是 ${q.opts[q.ans]}。${q.exp ? '<br>'+q.exp : ''}`;
+  S.mcqAnswered[g]++;
+  if(S.mcqAnswered[g] === GROUPS[g].mcq.length)
+    document.getElementById('toFill').disabled = false;
+}
+
+// ── 填空/改寫 ──
+function renderFill(grp, area) {
+  const g = grp.id, t = grp.type;
+  S.fillChecked[g] = new Array(grp.fill.length).fill(false);
+
+  const html = grp.fill.map((fq, fi) => {
+    const label = fq.type === 'rewrite' ? '✏️ 改寫' : '✏️ 填空';
+    return `<div class="fill-block" id="fq${g}_${fi}">
+      <div class="fill-label">${label} ${fi+1} / ${grp.fill.length}</div>
+      <div class="fill-q">
+        <div class="fill-qtext">${fq.q.replace(/\n/g,'<br>')}</div>
+        ${fq.hint ? `<div class="fill-hint">${fq.hint}</div>` : ''}
+        <input class="fill-input" id="fi${g}_${fi}" type="text" placeholder="${fq.type==='rewrite'?'請輸入完整句子…':'請填入答案…'}" autocomplete="off" autocorrect="off">
+        <button class="check-btn" onclick="checkFill(${g},${fi})">確認</button>
+        <div class="fill-ans" id="fa${g}_${fi}"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  area.innerHTML = `
+    <div class="phase-bar">${phaseBar(2, t)}</div>
+    ${html}
+    <button class="next-btn" id="toDone" onclick="finishGroup(${g})" disabled>全部完成 → 過關！</button>`;
+
+  grp.fill.forEach((fq, fi) => {
+    document.getElementById(`fi${g}_${fi}`).addEventListener('keydown', e => {
+      if(e.key === 'Enter') checkFill(g, fi);
+    });
+  });
+}
+
+function normalise(s) {
+  return s.trim().toLowerCase()
+    .replace(/['']/g,"'").replace(/[""]/g,'"')
+    .replace(/\s+/g,' ');
+}
+
+function checkFill(g, fi) {
+  const fq = GROUPS[g].fill[fi];
+  const input = document.getElementById(`fi${g}_${fi}`);
+  const fb = document.getElementById(`fa${g}_${fi}`);
+  const val = normalise(input.value);
+  if(!val) return;
+
+  const ok = fq.ans.some(a => {
+    const na = normalise(a);
+    return na === '' ? true : val.includes(na) || na.includes(val);
+  });
+
+  input.classList.remove('ok','ng');
+  input.classList.add(ok ? 'ok' : 'ng');
+  input.disabled = true;
+  document.querySelector(`#fq${g}_${fi} .check-btn`).disabled = true;
+
+  fb.className = `fill-ans ${ok?'ok':'ng'}`;
+  fb.innerHTML = ok
+    ? '✓ 正確！'
+    : `✗ 參考答案：<strong>${fq.ans[0]}</strong>`;
+  fb.style.display = 'block';
+
+  S.fillChecked[g][fi] = true;
+  if(S.fillChecked[g].every(Boolean))
+    document.getElementById('toDone').disabled = false;
+}
+
+function finishGroup(g) {
+  S.done[g] = true;
+  if(g < 3) {
+    const nt = document.getElementById(`tab-${g+1}`);
+    nt.classList.remove('locked');
+    const labels = ['先備① 假設語氣','句型① Without/But for','先備② 關係子句','句型② where/when'];
+    nt.textContent = labels[g+1];
+    if(GROUPS[g+1].type === 'prereq') nt.classList.add('prereq-tab');
+  }
+  updateProg();
+  S.phase = 3;
+  render();
+}
+
+function renderDone(g, area) {
+  const allDone = S.done.every(Boolean);
+  const grp = GROUPS[g];
+  area.innerHTML = `
+    <div class="phase-bar">${phaseBar(3, grp.type)}</div>
+    <div class="score-wrap">
+      <div class="score-circle">✓</div>
+      <div class="score-msg" style="margin-bottom:8px">第 ${g+1} 組「${grp.label}」完成！</div>
+      ${allDone ? '<div style="font-size:15px;color:var(--indigo);font-weight:700;margin-top:12px">🎉 四個文法點全部完成！</div>' : ''}
+    </div>
+    ${g < 3 ? `<button class="unlock-btn" onclick="setGroup(${g+1})">去下一組：${GROUPS[g+1].label} →</button>` : ''}`;
+}
+
+// 初始化
+updateProg();
+render();
+</script>
+</body>
+</html>
