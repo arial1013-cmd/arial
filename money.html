@@ -134,7 +134,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 </div></div>
 <div class="dnav" style="padding-top:0"><button class="dnavB" onclick="chMon(-1)">◀</button><span class="dnavL" id="homeMon">2026年6月</span><button class="dnavB" onclick="chMon(1)">▶</button></div>
 <div class="sec"><div class="secT">本月預算<span style="font-size:.75em;color:var(--txtL);font-weight:400;cursor:pointer" onclick="showPg('pgBud')">設定 →</span></div><div id="budBreakdown"></div></div>
-<div class="sec"><div class="secT">📝 最近記錄</div><ul class="entL" id="recList"><li class="ld"><div class="ldS"></div><div class="ldT">載入中...</div></li></ul></div>
+<div class="sec"><div class="secT">📝 最近記錄<span style="font-size:.75em;color:var(--txtL);font-weight:400;cursor:pointer" onclick="showPg('pgRec')">查看全部 →</span></div><ul class="entL" id="recList"><li class="ld"><div class="ldS"></div><div class="ldT">載入中...</div></li></ul></div>
 <div class="ai"><div class="aiH"><div class="aiAv">🤖</div><div class="aiNm">小魚 AI 助手</div></div><div class="aiC" id="aiC">正在分析...</div></div>
 </div>
 
@@ -160,6 +160,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 </div>
 
 <div class="pg" id="pgRec">
+<div class="addHd" style="margin-bottom:10px"><button class="x" onclick="backFromRec()">←</button><div class="ti">📋 記錄明細</div><div style="width:40px"></div></div>
 <div class="dnav"><button class="dnavB" onclick="chMon(-1)">◀</button><span class="dnavL" id="recMon">2026年6月</span><button class="dnavB" onclick="chMon(1)">▶</button></div>
 <div class="sec"><ul class="entL" id="recsList"><li class="ld"><div class="ldS"></div><div class="ldT">載入中...</div></li></ul></div>
 </div>
@@ -168,6 +169,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 <div class="dnav"><button class="dnavB" onclick="chRptMon(-1)">◀</button><span class="dnavL" id="rptMon">2026年6月</span><button class="dnavB" onclick="chRptMon(1)">▶</button></div>
 <div class="sec"><div class="secT">📊 支出分析</div><div id="pieC"></div><div class="leg" id="leg"></div></div>
 <div class="sec"><div class="secT">💳 付款方式統計</div><div id="paySt"></div></div>
+<button class="btn btnO" onclick="showPg('pgRec')">📋 查看本月完整記錄</button>
 </div>
 
 <div class="pg" id="pgBud">
@@ -384,8 +386,11 @@ if(amount>=3000)m='💸 這筆金額不小喔，'+m;
 return m;
 }
 
-function showPg(id){document.querySelectorAll('.pg').forEach(p=>p.classList.remove('act'));document.getElementById(id).classList.add('act');
+let recFrom='pgHome';
+function showPg(id){if(id==='pgRec'){const cur=document.querySelector('.pg.act');if(cur&&cur.id!=='pgRec')recFrom=cur.id;renRecs();}
+document.querySelectorAll('.pg').forEach(p=>p.classList.remove('act'));document.getElementById(id).classList.add('act');
 const tm={pgHome:0,pgAdd:1,pgRpt:2,pgBud:3,pgSet:4};document.querySelectorAll('.tabB').forEach((b,i)=>b.classList.toggle('act',i===tm[id]));}
+function backFromRec(){showPg(recFrom);}
 function chMon(d){const[y,m]=curMon.split('-').map(Number);let nm=m+d,ny=y;if(nm>12){nm=1;ny++;}if(nm<1){nm=12;ny--;}curMon=ny+'-'+String(nm).padStart(2,'0');updMonLbl();renHome();renRecs();renRpt();genAI();}
 function chRptMon(d){chMon(d);}
 
